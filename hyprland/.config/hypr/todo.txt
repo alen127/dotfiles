@@ -1,0 +1,4 @@
+idle
+theme waybar
+theme windows
+rebind esc to capslock
