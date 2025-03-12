@@ -6,8 +6,10 @@ polybar-msg cmd quit
 # Otherwise you can use the nuclear option:
 # killall -q polybar
 
-# Launch bar1 and bar2
-echo "---" | tee -a /tmp/polybar1.log /tmp/polybar2.log
-polybar alen 2>&1 | tee -a /tmp/polybar1.log & disown
-
-echo "Bar launched..."
+# Launch bar on each monitor, tray on primary
+polybar --list-monitors | while IFS=$'\n' read line; do
+  monitor=$(echo $line | cut -d':' -f1)
+  # if monitor is listed as HDMI-* set primary variable
+  primary=$(echo $line | grep HDMI | cut -d ':' -f1)
+  MONITOR=$monitor polybar --reload "alen${primary:+"-primary"}" &
+done
