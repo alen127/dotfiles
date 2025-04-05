@@ -1,15 +1,28 @@
-#!/usr/bin/env bash
+#!/bin/bash
+(
+  flock 200
 
-# Terminate already running bar instances
-# If all your bars have ipc enabled, you can use 
-polybar-msg cmd quit
-# Otherwise you can use the nuclear option:
-# killall -q polybar
+  killall -q polybar
 
-# Launch bar on each monitor, tray on primary
-polybar --list-monitors | while IFS=$'\n' read line; do
-  monitor=$(echo $line | cut -d':' -f1)
-  # if monitor is listed as HDMI-* set primary variable
-  primary=$(echo $line | grep HDMI | cut -d ':' -f1)
-  MONITOR=$monitor polybar --reload "alen${primary:+"-primary"}" &
-done
+  while pgrep -u $UID -x polybar > /dev/null; do sleep 0.5; done
+
+  outputs=$(xrandr --query | grep " connected" | cut -d" " -f1)
+  tray_output=DP4
+
+  for m in $outputs; do
+    if [[ $m == "HDMI0" ]]; then
+        tray_output=$m
+    fi
+  done
+
+  for m in $outputs; do
+    export MONITOR=$m
+    export TRAY_POSITION=none
+    if [[ $m == $tray_output ]]; then
+      TRAY_POSITION=right
+    fi
+
+    polybar --reload alen </dev/null >/var/tmp/polybar-$m.log 2>&1 200>&- &
+    disown
+  done
+) 200>/var/tmp/polybar-launch.lock
